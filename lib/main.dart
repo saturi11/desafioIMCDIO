@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 import 'imc.dart';
 
-void main() {
+void main() async {
+  await Hive.initFlutter();
+  Hive.registerAdapter(IMCAdapter());
+  await Hive.openBox<IMC>('imcBox');
   runApp(MyApp());
 }
 
@@ -29,7 +33,13 @@ class _MyHomePageState extends State<MyHomePage> {
   final _pesoController = TextEditingController();
   final _alturaController = TextEditingController();
 
-  List<IMC> _imcList = [];
+  late Box<IMC> imcBox;
+
+  @override
+  void initState() {
+    super.initState();
+    imcBox = Hive.box<IMC>('imcBox');
+  }
 
   void _calcularIMC() {
     if (_formKey.currentState!.validate()) {
@@ -39,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
       IMC imc = IMC(peso: peso, altura: altura);
 
       setState(() {
-        _imcList.add(imc);
+        imcBox.add(imc);
       });
 
       _pesoController.clear();
@@ -98,13 +108,25 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             Expanded(
-              child: ListView.builder(
-                itemCount: _imcList.length,
-                itemBuilder: (context, index) {
-                  final imc = _imcList[index];
-                  return ListTile(
-                    title: Text('IMC: ${imc.calcularIMC().toStringAsFixed(2)}'),
-                    subtitle: Text(imc.classificarIMC()),
+              child: ValueListenableBuilder(
+                valueListenable: imcBox.listenable(),
+                builder: (context, Box<IMC> box, _) {
+                  if (box.values.isEmpty) {
+                    return Center(
+                      child: Text('Nenhum cálculo de IMC registrado.'),
+                    );
+                  }
+
+                  return ListView.builder(
+                    itemCount: box.values.length,
+                    itemBuilder: (context, index) {
+                      IMC imc = box.getAt(index)!;
+                      return ListTile(
+                        title: Text(
+                            'IMC: ${imc.calcularIMC().toStringAsFixed(2)}'),
+                        subtitle: Text(imc.classificarIMC()),
+                      );
+                    },
                   );
                 },
               ),

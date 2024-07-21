@@ -1,5 +1,13 @@
-class IMC {
+import 'package:hive/hive.dart';
+
+part 'imc.g.dart';
+
+@HiveType(typeId: 0)
+class IMC extends HiveObject {
+  @HiveField(0)
   double peso;
+
+  @HiveField(1)
   double altura;
 
   IMC({required this.peso, required this.altura});
